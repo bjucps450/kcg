@@ -1,10 +1,10 @@
 package org.main;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.Token;
+import org.antlr.v4.gui.Trees;
+import org.antlr.v4.runtime.*;
 import org.apache.commons.cli.*;
 import org.bju.KCG.KCGLexer;
+import org.bju.KCG.KCGParser;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,10 +26,9 @@ public class Main {
 
         CharStream input = CharStreams.fromString(contents.toString());
         org.bju.KCG.KCGLexer lexer = new KCGLexer(input);
-        Token t = null;
-        while ((t = lexer.nextToken()).getType() != KCGLexer.EOF) {
-            System.out.println(t.getLine() + ";" + t.getText() + ";" + lexer.getVocabulary().getDisplayName(t.getType()));
-        }
+        org.bju.KCG.KCGParser parser = new KCGParser(new CommonTokenStream(lexer));
+        var tree = parser.start();
+        Trees.inspect(tree, parser);
     }
 
     // parse the command line arguments and return all non arg arguments as an ArrayList
