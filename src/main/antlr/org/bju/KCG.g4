@@ -8,9 +8,9 @@ grammar KCG;
  * Parser Rules
  */
 
-start: statements+=statement*;
+start: (statements+=statement | methods+=method)*;
 
-statement: statement_if | statement_while | statement_assignment;
+statement: statement_if | statement_while | statement_assignment | expr;
 
 statement_if: KEYWORD_IF cond=expr KEYWORD_THEN OPERATOR_CLOSE_CURLY true+=statement* OPERATOR_OPEN_CURLY false=else?;
 else: KEYWORD_IF_NOT OPERATOR_CLOSE_CURLY false+=statement* OPERATOR_OPEN_CURLY;
@@ -19,6 +19,16 @@ statement_while: KEYWORD_FOREVER KEYWORD_UNLESS cond=expr OPERATOR_CLOSE_CURLY t
 
 statement_assignment: id=IDENTIFIER OPERATOR_COMMA value=expr;
 
+method: name=IDENTIFIER OPERATOR_L_SQUARE arguments=args OPERATOR_R_SQUARE OPERATOR_CLOSE_CURLY guts=start OPERATOR_OPEN_CURLY;
+
+args: first=arg (OPERATOR_COMMA second+=arg)*;
+
+arg: name=IDENTIFIER OPERATOR_COLON datatype=type;
+
+type: TYPE_INT | TYPE_STR;
+
+exprs: first=expr (OPERATOR_CARET second+=expr)*;
+
 expr: STRING
     | DIGIT
     | IDENTIFIER
@@ -26,7 +36,10 @@ expr: STRING
     | KEYWORD_NO
     | op=OPERATOR_BANG expr
     | first=expr op=(OPERATOR_MULTIPLY | OPERATOR_DIVIDE) second=expr
-    | first=expr op=(OPERATOR_ADDITION | OPERATOR_SUBTRACT) second=expr;
+    | first=expr op=(OPERATOR_ADDITION | OPERATOR_SUBTRACT) second=expr
+    | first=expr op=OPERATOR_AMPERSAND second=expr
+    | first=expr op=OPERATOR_PIPE second=expr
+    | name=IDENTIFIER OPERATOR_L_SQUARE params=exprs OPERATOR_R_SQUARE;
 
 /**
  * Lexer Rules
@@ -49,6 +62,9 @@ KEYWORD_UNLESS: 'unless';
 KEYWORD_YES: 'yes';
 KEYWORD_NO: 'no';
 
+TYPE_INT: 'int';
+TYPE_STR: 'str';
+
 IDENTIFIER: ('_' | '.')+;
 
 OPERATOR_ADDITION: '-';
@@ -62,6 +78,10 @@ OPERATOR_COMMA: ',';
 OPERATOR_PIPE: '|';
 OPERATOR_AMPERSAND: '&';
 OPERATOR_BANG: '!';
+OPERATOR_L_SQUARE: '[';
+OPERATOR_R_SQUARE: ']';
+OPERATOR_COLON: ':';
+OPERATOR_CARET: '^';
 
 DIGIT: NUMBER+;
 
