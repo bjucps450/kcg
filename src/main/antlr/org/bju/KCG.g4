@@ -10,7 +10,10 @@ grammar KCG;
 
 start: (statements+=statement | methods+=method)*;
 
-statement: statement_if | statement_while | statement_assignment | expr;
+statement: statement_if # statementif
+         | statement_while # statementwhile
+         | statement_assignment # statementassignment
+         | expr # statementexpr;
 
 statement_if: KEYWORD_IF cond=expr KEYWORD_THEN OPERATOR_CLOSE_CURLY true+=statement* OPERATOR_OPEN_CURLY false=else?;
 else: KEYWORD_IF_NOT OPERATOR_CLOSE_CURLY false+=statement* OPERATOR_OPEN_CURLY;
@@ -25,21 +28,23 @@ args: first=arg (OPERATOR_COMMA second+=arg)*;
 
 arg: name=IDENTIFIER OPERATOR_COLON datatype=type;
 
-type: TYPE_INT | TYPE_STR;
+type: TYPE_INT # inttype
+    | TYPE_STR # strtype
+    | TYPE_BOOL # booltype;
 
 exprs: first=expr (OPERATOR_CARET second+=expr)*;
 
-expr: STRING
-    | DIGIT
-    | IDENTIFIER
-    | KEYWORD_YES
-    | KEYWORD_NO
-    | op=OPERATOR_BANG expr
-    | first=expr op=(OPERATOR_MULTIPLY | OPERATOR_DIVIDE) second=expr
-    | first=expr op=(OPERATOR_ADDITION | OPERATOR_SUBTRACT) second=expr
-    | first=expr op=OPERATOR_AMPERSAND second=expr
-    | first=expr op=OPERATOR_PIPE second=expr
-    | name=IDENTIFIER OPERATOR_L_SQUARE params=exprs OPERATOR_R_SQUARE;
+expr: STRING # str
+    | DIGIT # int
+    | IDENTIFIER # id
+    | KEYWORD_YES # true
+    | KEYWORD_NO # false
+    | op=OPERATOR_BANG expr # not
+    | first=expr op=(OPERATOR_MULTIPLY | OPERATOR_DIVIDE) second=expr # multdiv
+    | first=expr op=(OPERATOR_ADDITION | OPERATOR_SUBTRACT) second=expr # addsub
+    | first=expr op=OPERATOR_AMPERSAND second=expr # and
+    | first=expr op=OPERATOR_PIPE second=expr # or
+    | name=IDENTIFIER OPERATOR_L_SQUARE params=exprs OPERATOR_R_SQUARE # methodcall;
 
 /**
  * Lexer Rules
@@ -64,6 +69,7 @@ KEYWORD_NO: 'no';
 
 TYPE_INT: 'int';
 TYPE_STR: 'str';
+TYPE_BOOL: 'bool';
 
 IDENTIFIER: ('_' | '.')+;
 
