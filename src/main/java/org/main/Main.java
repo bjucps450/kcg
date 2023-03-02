@@ -28,7 +28,7 @@ public class Main {
         org.bju.KCG.KCGLexer lexer = new KCGLexer(input);
         org.bju.KCG.KCGParser parser = new KCGParser(new CommonTokenStream(lexer));
         var tree = parser.start();
-        Trees.inspect(tree, parser);
+        var analysis = new KCGSemanticAnalyzer().visit(tree);
     }
 
     // parse the command line arguments and return all non arg arguments as an ArrayList

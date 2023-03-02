@@ -1,6 +1,7 @@
 package org.main;
 
 import org.bju.KCG.KCGParser;
+import org.main.decl.MethodDecl;
 import org.main.decl.ParamDecl;
 import org.main.decl.VarDecl;
 
@@ -13,10 +14,15 @@ public class KCGSemanticAnalyzer extends org.bju.KCG.KCGBaseVisitor<Type> {
         if(ctx.methods != null) {
             ctx.methods.forEach(this::visit);
         }
+        Type lastStatementType = Type.ERROR;
         if(ctx.statements != null) {
-            ctx.statements.forEach(this::visit);
+            for(var statement : ctx.statements) {
+                lastStatementType = visit(statement);
+            }
+        } else {
+            System.out.println("at least one statement is required in methods");
         }
-        return Type.BOOL;
+        return lastStatementType;
     }
 
     @Override
@@ -76,22 +82,66 @@ public class KCGSemanticAnalyzer extends org.bju.KCG.KCGBaseVisitor<Type> {
 
     @Override
     public Type visitStatement_assignment(KCGParser.Statement_assignmentContext ctx) {
-        return null;
+        Type exprType = visit(ctx.expr());
+        var decl1 = symbolTable.lookup(ctx.IDENTIFIER().getText(), VarDecl.class);
+        var decl2 = symbolTable.lookup(ctx.IDENTIFIER().getText(), ParamDecl.class);
+        if(decl1.isPresent()) {
+            if(!exprType.equals(decl1.get().getType())) {
+                System.out.println("could not assign type " + exprType + " to type " + decl1.get().getType());
+                return Type.ERROR;
+            }
+        } else if(decl2.isPresent()) {
+            if(!exprType.equals(decl2.get().getType())) {
+                System.out.println("could not assign type " + exprType + " to type " + decl2.get().getType());
+                return Type.ERROR;
+            }
+        } else {
+            symbolTable.push();
+            symbolTable.add(new VarDecl(ctx.IDENTIFIER().getText(), exprType, symbolTable.getOrder(VarDecl.class)));
+            symbolTable.pop();
+        }
+        return exprType;
     }
 
     @Override
     public Type visitMethod(KCGParser.MethodContext ctx) {
-        return null;
+        var existingMethod = symbolTable.lookup(ctx.IDENTIFIER().getText(), MethodDecl.class);
+        if(existingMethod.isPresent()) {
+            System.out.println("a method with name " + ctx.IDENTIFIER().getText() + " already exists");
+            return Type.ERROR;
+        }
+        Type methodType = visit(ctx.datatype);
+        symbolTable.push();
+        symbolTable.add(new MethodDecl(ctx.IDENTIFIER().getText(), methodType, symbolTable.getOrder(MethodDecl.class)));
+        if(ctx.arguments != null) {
+            visit(ctx.arguments);
+        }
+        Type lastStatementType = visit(ctx.guts);
+        if(!lastStatementType.equals(methodType)) {
+            System.out.println("method expected return of " + methodType + " but got " + lastStatementType);
+        }
+        symbolTable.pop();
+        return methodType;
     }
 
     @Override
     public Type visitArgs(KCGParser.ArgsContext ctx) {
-        return null;
+        visit(ctx.first);
+        if(ctx.second != null) {
+            for(var arg : ctx.second) {
+                visit(arg);
+            }
+        }
+        return Type.VOID;
     }
 
     @Override
     public Type visitArg(KCGParser.ArgContext ctx) {
-        return null;
+        Type paramType = visit(ctx.type());
+        symbolTable.push();
+        symbolTable.add(new ParamDecl(ctx.IDENTIFIER().getText(), paramType, symbolTable.getOrder(ParamDecl.class)));
+        symbolTable.pop();
+        return paramType;
     }
 
     @Override
@@ -109,9 +159,19 @@ public class KCGSemanticAnalyzer extends org.bju.KCG.KCGBaseVisitor<Type> {
         return Type.BOOL;
     }
 
+    private MethodDecl methodBeingCalled = null;
+
     @Override
     public Type visitExprs(KCGParser.ExprsContext ctx) {
-        return null;
+        Type firstArg = visit(ctx.first);
+        methodBeingCalled.checkArg(0, firstArg);
+        if(ctx.second != null) {
+            for (int i = 0; i < ctx.second.size(); ++i) {
+                Type nextArg = visit(ctx.second.get(i));
+                methodBeingCalled.checkArg(i + 1, nextArg);
+            }
+        }
+        return Type.VOID;
     }
 
     @Override
@@ -121,7 +181,23 @@ public class KCGSemanticAnalyzer extends org.bju.KCG.KCGBaseVisitor<Type> {
 
     @Override
     public Type visitMethodcall(KCGParser.MethodcallContext ctx) {
-        return null;
+        var method = symbolTable.lookup(ctx.IDENTIFIER().getText(), MethodDecl.class);
+        if(method.isEmpty()) {
+            System.out.println(ctx.IDENTIFIER().getText() + " doesn't exist");
+            return Type.ERROR;
+        }
+        methodBeingCalled = method.get();
+        int expectedCount = method.get().getParameters().size();
+        int actualCount = 0;
+        if(ctx.exprs() != null) {
+            actualCount = 1 + (ctx.exprs().second != null ? ctx.exprs().second.size() : 0);
+            visit(ctx.exprs());
+        }
+        if(expectedCount != actualCount) {
+            System.out.println(ctx.IDENTIFIER().getText() + " expected " + expectedCount + " args but got " + actualCount);
+            return Type.ERROR;
+        }
+        return method.get().getType();
     }
 
     @Override

@@ -22,7 +22,7 @@ statement_while: KEYWORD_FOREVER KEYWORD_UNLESS cond=expr OPERATOR_CLOSE_CURLY t
 
 statement_assignment: id=IDENTIFIER OPERATOR_COMMA value=expr;
 
-method: name=IDENTIFIER OPERATOR_L_SQUARE arguments=args OPERATOR_R_SQUARE OPERATOR_CLOSE_CURLY guts=start OPERATOR_OPEN_CURLY;
+method: name=IDENTIFIER OPERATOR_L_SQUARE arguments=args? OPERATOR_R_SQUARE OPERATOR_COLON datatype=type OPERATOR_CLOSE_CURLY guts=start OPERATOR_OPEN_CURLY;
 
 args: first=arg (OPERATOR_COMMA second+=arg)*;
 
