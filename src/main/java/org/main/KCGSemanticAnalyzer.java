@@ -1,10 +1,12 @@
 package org.main;
 
+import lombok.Data;
 import org.bju.KCG.KCGParser;
 import org.main.decl.MethodDecl;
 import org.main.decl.ParamDecl;
 import org.main.decl.VarDecl;
 
+@Data
 public class KCGSemanticAnalyzer extends org.bju.KCG.KCGBaseVisitor<Type> {
 
     private SymbolTable symbolTable = new SymbolTable();
