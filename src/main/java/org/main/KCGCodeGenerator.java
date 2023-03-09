@@ -40,9 +40,15 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
         return super.visitStatementexpr(ctx);
     }
 
+    private Integer ifCounter = 0;
+
     @Override
     public List<Instruction> visitStatement_if(KCGParser.Statement_ifContext ctx) {
-        return super.visitStatement_if(ctx);
+        List<Instruction> instructions = new ArrayList<>();
+        instructions.addAll(visit(ctx.cond));
+        instructions.add(new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RAX));
+        
+        return instructions;
     }
 
     @Override
@@ -126,20 +132,39 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
 
     @Override
     public List<Instruction> visitMultdiv(KCGParser.MultdivContext ctx) {
-        return super.visitMultdiv(ctx);
+        ArrayList<Instruction> instructions = new ArrayList<>();
+        instructions.addAll(visit(ctx.second));
+        instructions.addAll(visit(ctx.first));
+        if(ctx.op.getText().equals("+")) {
+            instructions.addAll(List.of(
+                new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RAX),
+                new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RBX),
+                new Instruction(Operation.MUL, InstructionSuffix.QUAD, Register.RBX),
+                new Instruction(Operation.PUSH, InstructionSuffix.QUAD, Register.RAX)
+            ));
+        } else {
+            instructions.addAll(List.of(
+                new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RAX),
+                new Instruction(Operation.CQO),
+                new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RBX),
+                new Instruction(Operation.DIV, InstructionSuffix.QUAD, Register.RBX),
+                new Instruction(Operation.PUSH, InstructionSuffix.QUAD, Register.RAX)
+            ));
+        }
+        return instructions;
     }
 
     @Override
     public List<Instruction> visitTrue(KCGParser.TrueContext ctx) {
         return List.of(
-            new Push(1)
+            new Instruction(Operation.PUSH, InstructionSuffix.QUAD, 1)
         );
     }
 
     @Override
     public List<Instruction> visitFalse(KCGParser.FalseContext ctx) {
         return List.of(
-            new Push(0)
+            new Instruction(Operation.PUSH, InstructionSuffix.QUAD, 0)
         );
     }
 
@@ -156,7 +181,7 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
     @Override
     public List<Instruction> visitInt(KCGParser.IntContext ctx) {
         return List.of(
-            new Push(Integer.parseInt(ctx.DIGIT().getText()))
+            new Instruction(Operation.PUSH, InstructionSuffix.QUAD, Integer.parseInt(ctx.DIGIT().getText()))
         );
     }
 }
