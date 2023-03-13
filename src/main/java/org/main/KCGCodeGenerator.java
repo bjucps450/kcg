@@ -17,27 +17,34 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
 
     @Override
     public List<Instruction> visitStart(KCGParser.StartContext ctx) {
-        return super.visitStart(ctx);
+        List<Instruction> instructions = new ArrayList<>();
+        for(var statement : ctx.statements) {
+            instructions.addAll(visit(statement));
+        }
+        for(var method : ctx.methods) {
+            instructions.addAll(visit(method));
+        }
+        return instructions;
     }
 
     @Override
     public List<Instruction> visitStatementif(KCGParser.StatementifContext ctx) {
-        return super.visitStatementif(ctx);
+        return visit(ctx.statement_if());
     }
 
     @Override
     public List<Instruction> visitStatementwhile(KCGParser.StatementwhileContext ctx) {
-        return super.visitStatementwhile(ctx);
+        return visit(ctx.statement_while());
     }
 
     @Override
     public List<Instruction> visitStatementassignment(KCGParser.StatementassignmentContext ctx) {
-        return super.visitStatementassignment(ctx);
+        return visit(ctx.statement_assignment());
     }
 
     @Override
     public List<Instruction> visitStatementexpr(KCGParser.StatementexprContext ctx) {
-        return super.visitStatementexpr(ctx);
+        return visit(ctx.expr());
     }
 
     private Integer ifCounter = 0;
@@ -47,7 +54,7 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
         List<Instruction> instructions = new ArrayList<>();
         instructions.addAll(visit(ctx.cond));
         instructions.add(new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RAX));
-        
+
         return instructions;
     }
 
@@ -55,6 +62,8 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
     public List<Instruction> visitElse(KCGParser.ElseContext ctx) {
         return super.visitElse(ctx);
     }
+
+    private Integer whileCounter = 0;
 
     @Override
     public List<Instruction> visitStatement_while(KCGParser.Statement_whileContext ctx) {
@@ -114,20 +123,38 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
     @Override
     public List<Instruction> visitNot(KCGParser.NotContext ctx) {
         return List.of(
-            new Pop(Register.RAX),
-            new Not(Register.RAX),
-            new Push(Register.RAX)
+            new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RAX),
+            new Instruction(Operation.NOT, InstructionSuffix.QUAD, Register.RAX),
+            new Instruction(Operation.PUSH, InstructionSuffix.QUAD, Register.RAX)
         );
     }
 
     @Override
     public List<Instruction> visitOr(KCGParser.OrContext ctx) {
-        return super.visitOr(ctx);
+        ArrayList<Instruction> instructions = new ArrayList<>();
+        instructions.addAll(visit(ctx.second));
+        instructions.addAll(visit(ctx.first));
+        instructions.addAll(List.of(
+            new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RAX),
+            new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RBX),
+            new Instruction(Operation.OR, InstructionSuffix.QUAD, Register.RBX, Register.RAX),
+            new Instruction(Operation.PUSH, InstructionSuffix.QUAD, Register.RAX)
+        ));
+        return instructions;
     }
 
     @Override
     public List<Instruction> visitAnd(KCGParser.AndContext ctx) {
-        return super.visitAnd(ctx);
+        ArrayList<Instruction> instructions = new ArrayList<>();
+        instructions.addAll(visit(ctx.second));
+        instructions.addAll(visit(ctx.first));
+        instructions.addAll(List.of(
+            new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RAX),
+            new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RBX),
+            new Instruction(Operation.AND, InstructionSuffix.QUAD, Register.RBX, Register.RAX),
+            new Instruction(Operation.PUSH, InstructionSuffix.QUAD, Register.RAX)
+        ));
+        return instructions;
     }
 
     @Override
@@ -170,7 +197,25 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
 
     @Override
     public List<Instruction> visitAddsub(KCGParser.AddsubContext ctx) {
-        return super.visitAddsub(ctx);
+        ArrayList<Instruction> instructions = new ArrayList<>();
+        instructions.addAll(visit(ctx.second));
+        instructions.addAll(visit(ctx.first));
+        if(ctx.op.getText().equals("-")) {
+            instructions.addAll(List.of(
+                new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RAX),
+                new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RBX),
+                new Instruction(Operation.ADD, InstructionSuffix.QUAD, Register.RBX, Register.RAX),
+                new Instruction(Operation.PUSH, InstructionSuffix.QUAD, Register.RAX)
+            ));
+        } else {
+            instructions.addAll(List.of(
+                new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RAX),
+                new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RBX),
+                new Instruction(Operation.SUB, InstructionSuffix.QUAD, Register.RBX, Register.RAX),
+                new Instruction(Operation.PUSH, InstructionSuffix.QUAD, Register.RAX)
+            ));
+        }
+        return instructions;
     }
 
     @Override

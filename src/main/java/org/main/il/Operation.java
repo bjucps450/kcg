@@ -12,7 +12,9 @@ public enum Operation {
     CQO("cqo"),
     PUSH("push"),
     POP("pop"),
-    NOT("not");
+    NOT("not"),
+    OR("or"),
+    AND("and");
 
     @Getter
     private String name;
