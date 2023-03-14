@@ -2,10 +2,10 @@ package org.main;
 
 import com.ibm.icu.text.ArabicShaping;
 import org.bju.KCG.KCGParser;
+import org.main.decl.MethodDecl;
 import org.main.il.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instruction>> {
     private String filename;
@@ -24,6 +24,7 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
         for(var method : ctx.methods) {
             instructions.addAll(visit(method));
         }
+
         return instructions;
     }
 
@@ -70,14 +71,64 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
         return super.visitStatement_while(ctx);
     }
 
+    private Set<String> visitedVariables = new HashSet<>();
+
     @Override
     public List<Instruction> visitStatement_assignment(KCGParser.Statement_assignmentContext ctx) {
-        return super.visitStatement_assignment(ctx);
+        List<Instruction> instructions = new ArrayList<>();
+        String name = "_var_" + ctx.id.getText();
+        if(!visitedVariables.contains(name)) {
+            instructions.add(new Stabs(".data"));
+            instructions.add(new Stabs(".comm " + name + ", 8, 4"));
+            instructions.add(new Stabs(".text"));
+            visitedVariables.add(name);
+        }
+        instructions.addAll(visit(ctx.expr()));
+        instructions.add(new Instruction(Operation.POP, InstructionSuffix.QUAD, "$" + name + "(%rip)"));
+        return instructions;
+    }
+
+    private Stack<MethodDecl> methodDeclStack = new Stack<>();
+
+    private MethodDecl lookupMethod(String name) {
+        for(int i = methodDeclStack.size() - 1; i >= 0; --i) {
+            var possibleMethod = methodDeclStack.get(i).lookup(name, MethodDecl.class);
+            if(possibleMethod.isPresent()) {
+                return possibleMethod.get();
+            }
+        }
+        var possibleMethod = this.symbolTable.lookup(name, MethodDecl.class);
+        return possibleMethod.orElse(null);
     }
 
     @Override
     public List<Instruction> visitMethod(KCGParser.MethodContext ctx) {
-        return super.visitMethod(ctx);
+        MethodDecl methodDecl = lookupMethod(ctx.name.getText());
+        methodDeclStack.push(methodDecl);
+        List<Instruction> instructions = new ArrayList<>();
+        if(ctx.guts.methods != null) {
+            for(var entity : ctx.guts.methods) {
+                instructions.addAll(visit(entity));
+            }
+        }
+        String name = "_meth_" + ctx.name.getText();
+        instructions.add(new Stabs(name + ":"));
+        instructions.add(new Instruction(Operation.PUSH, InstructionSuffix.QUAD, Register.RBP));
+        instructions.add(new Instruction(Operation.MOV, InstructionSuffix.QUAD, Register.RSP, Register.RBP));
+        int numOfParams = methodDecl.getVariables().size() + (methodDecl.getVariables().size() % 2 == 1 ? 1 : 0);
+        instructions.add(new Instruction(Operation.SUB, InstructionSuffix.QUAD, numOfParams * 8, Register.RSP));
+        if(ctx.guts.statements != null) {
+            for(var entity : ctx.guts.statements) {
+                instructions.addAll(visit(entity));
+            }
+            instructions.add(new Instruction(Operation.POP, InstructionSuffix.QUAD, Register.RAX));
+        } else {
+            instructions.add(new Instruction(Operation.MOV, InstructionSuffix.QUAD, 0, Register.RAX));
+        }
+        instructions.add(new Instruction(Operation.LEAVE));
+        instructions.add(new Instruction(Operation.RET));
+        methodDeclStack.pop();
+        return instructions;
     }
 
     @Override
@@ -105,9 +156,31 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
         return new ArrayList<>();
     }
 
+    private Register getParamRegister(int i) {
+        switch (i) {
+            case 1: return Register.RSI;
+            case 2: return Register.RDX;
+            case 3: return Register.RCX;
+            case 4: return Register.R8;
+            case 5: return Register.R9;
+        }
+        return Register.RDI;
+    }
+
     @Override
     public List<Instruction> visitExprs(KCGParser.ExprsContext ctx) {
-        return super.visitExprs(ctx);
+        List<Instruction> instructions = new ArrayList<>();
+        if(ctx.second != null) {
+            for (int i = ctx.second.size(); i >= 0; --i) {
+                instructions.addAll(visit(ctx.second.get(i)));
+                if(i + 1 < 6) {
+                    instructions.add(new Instruction(Operation.POP, InstructionSuffix.QUAD, getParamRegister(i + 1)));
+                }
+            }
+        }
+        instructions.addAll(visit(ctx.first));
+        instructions.add(new Instruction(Operation.POP, InstructionSuffix.QUAD, getParamRegister(0)));
+        return instructions;
     }
 
     @Override
@@ -117,7 +190,20 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
 
     @Override
     public List<Instruction> visitMethodcall(KCGParser.MethodcallContext ctx) {
-        return super.visitMethodcall(ctx);
+        List<Instruction> instructions = new ArrayList<>();
+        MethodDecl methodDecl = lookupMethod(ctx.name.getText());
+        if(methodDecl.getParameters().size() > 6 && methodDecl.getParameters().size() % 2 != 0) {
+            instructions.add(new Instruction(Operation.SUB, InstructionSuffix.QUAD, 8, Register.RSP));
+        }
+        if(ctx.exprs() != null) {
+            instructions.addAll(visit(ctx.exprs()));
+        }
+        instructions.add(new Instruction(Operation.CALL, InstructionSuffix.QUAD, "_meth_" + ctx.name.getText()));
+        if(methodDecl.getParameters().size() > 6) {
+            int amountToAdd = (methodDecl.getParameters().size() - 6) + (methodDecl.getParameters().size() % 2 == 1 ? 1 : 0);
+            instructions.add(new Instruction(Operation.ADD, InstructionSuffix.QUAD, amountToAdd * 8, Register.RSP));
+        }
+        return instructions;
     }
 
     @Override
@@ -220,7 +306,9 @@ public class KCGCodeGenerator extends org.bju.KCG.KCGBaseVisitor<List<Instructio
 
     @Override
     public List<Instruction> visitId(KCGParser.IdContext ctx) {
-        return super.visitId(ctx);
+        return List.of(
+            new Instruction(Operation.PUSH, InstructionSuffix.QUAD, "$_var_" + ctx.IDENTIFIER().getText() + "(%rip)"))
+        };
     }
 
     @Override

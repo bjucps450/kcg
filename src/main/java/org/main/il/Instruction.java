@@ -24,6 +24,12 @@ public class Instruction {
         this.operand1 = "%" + register.getName();
     }
 
+    public Instruction(Operation op, InstructionSuffix suffix, String string) {
+        this.op = op.getName();
+        this.suffix = suffix.getSuffix();
+        this.operand1 = string;
+    }
+
     public Instruction(Operation op, InstructionSuffix suffix, Integer num) {
         this.op = op.getName();
         this.suffix = suffix.getSuffix();
@@ -34,6 +40,13 @@ public class Instruction {
         this.op = op.getName();
         this.suffix = suffix.getSuffix();
         this.operand1 = "%" + src.getName();
+        this.operand2 = "%" + dest.getName();
+    }
+
+    public Instruction(Operation op, InstructionSuffix suffix, Integer src, Register dest) {
+        this.op = op.getName();
+        this.suffix = suffix.getSuffix();
+        this.operand1 = "$" + src;
         this.operand2 = "%" + dest.getName();
     }
 

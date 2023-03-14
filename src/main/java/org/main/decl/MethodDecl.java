@@ -3,9 +3,12 @@ package org.main.decl;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.main.Type;
+import org.main.il.Operation;
 
+import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Data
 public class MethodDecl extends Decl {
@@ -25,5 +28,16 @@ public class MethodDecl extends Decl {
                 System.out.println(name + " expected " + exepected + " for " + position + "-th parameter but got " + typeProvided);
             }
         }
+    }
+
+    public <T extends Decl> Optional<T> lookup(String name, Class<T> clazz) {
+        if(clazz.equals(MethodDecl.class)) {
+            return (Optional<T>) this.methods.stream().filter(x -> x.getName().equals(name)).findFirst();
+        } if(clazz.equals(VarDecl.class)) {
+            return (Optional<T>) this.variables.stream().filter(x -> x.getName().equals(name)).findFirst();
+        } if(clazz.equals(ParamDecl.class)) {
+            return (Optional<T>) this.parameters.stream().filter(x -> x.getName().equals(name)).findFirst();
+        }
+        return Optional.empty();
     }
 }

@@ -14,7 +14,11 @@ public enum Operation {
     POP("pop"),
     NOT("not"),
     OR("or"),
-    AND("and");
+    AND("and"),
+    LEAVE("leave"),
+    RET("ret"),
+    CALL("call"),
+    MOV("mov");
 
     @Getter
     private String name;
