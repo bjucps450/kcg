@@ -13,15 +13,16 @@ public class KCGSemanticAnalyzer extends org.bju.KCG.KCGBaseVisitor<Type> {
 
     @Override
     public Type visitStart(KCGParser.StartContext ctx) {
-        if(ctx.methods != null) {
-            ctx.methods.forEach(this::visit);
-        }
         Type lastStatementType = Type.ERROR;
-        if(ctx.statements != null) {
-            for(var statement : ctx.statements) {
-                lastStatementType = visit(statement);
+        if(ctx.items != null) {
+            for(var item : ctx.items) {
+                Type type = visit(item);
+                if(item instanceof KCGParser.PrimarystatementContext) {
+                    lastStatementType = type;
+                }
             }
-        } else {
+        }
+        if(lastStatementType.equals(Type.ERROR)) {
             System.out.println("at least one statement is required in methods");
         }
         return lastStatementType;

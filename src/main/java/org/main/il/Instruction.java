@@ -50,6 +50,11 @@ public class Instruction {
         this.operand2 = "%" + dest.getName();
     }
 
+    public Instruction(Operation op, String destination) {
+        this.op = op.getName();
+        this.operand1 = destination;
+    }
+
     public String toString() {
         String instruction = "\t" + this.op;
         if(suffix != null) {
@@ -61,6 +66,6 @@ public class Instruction {
         if(operand2 != null) {
             instruction += ", " + operand2;
         }
-        return instruction;
+        return instruction + "\n";
     }
 }

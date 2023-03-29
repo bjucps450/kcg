@@ -18,7 +18,10 @@ public enum Operation {
     LEAVE("leave"),
     RET("ret"),
     CALL("call"),
-    MOV("mov");
+    MOV("mov"),
+    CMP("cmp"),
+    JE("je"),
+    JMP("jmp");
 
     @Getter
     private String name;

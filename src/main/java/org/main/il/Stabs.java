@@ -7,6 +7,6 @@ public class Stabs extends Instruction {
     }
 
     public String toString() {
-        return stabs;
+        return stabs + "\n";
     }
 }

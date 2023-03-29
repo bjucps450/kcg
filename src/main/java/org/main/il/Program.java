@@ -1,6 +1,6 @@
 package org.main.il;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,12 +8,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+@AllArgsConstructor
 public class Program {
-    private final List<Instruction> instructions = new ArrayList<>();
-
-    public void add(Instruction i) {
-        this.instructions.add(i);
-    }
+    private List<Instruction> instructions = new ArrayList<>();
 
     public void generate(String filename) throws IOException {
         StringBuilder builder = new StringBuilder();

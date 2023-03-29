@@ -1,11 +1,8 @@
 package org.main.decl;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.main.Type;
-import org.main.il.Operation;
 
-import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

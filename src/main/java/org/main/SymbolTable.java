@@ -5,7 +5,10 @@ import org.main.decl.MethodDecl;
 import org.main.decl.ParamDecl;
 import org.main.decl.VarDecl;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Stack;
 
 public class SymbolTable {
     private Stack<List<Decl>> symbolTableStack = new Stack<>();

@@ -1,10 +1,12 @@
 package org.main;
 
-import org.antlr.v4.gui.Trees;
-import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.commons.cli.*;
 import org.bju.KCG.KCGLexer;
 import org.bju.KCG.KCGParser;
+import org.main.il.Program;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,7 +33,9 @@ public class Main {
         var analysis = new KCGSemanticAnalyzer();
         analysis.visit(tree);
         String filename = files.get(0).replace(".kcg", ".s");
-        new KCGCodeGenerator(analysis.getSymbolTable(), files.get(0).replace(".kcg", ".s")).visit(tree);
+        new Program(
+            new KCGCodeGenerator(analysis.getSymbolTable()).visit(tree)
+        ).generate(filename);
     }
 
     // parse the command line arguments and return all non arg arguments as an ArrayList

@@ -8,7 +8,10 @@ grammar KCG;
  * Parser Rules
  */
 
-start: (statements+=statement | methods+=method)*;
+start: items+=primary*;
+
+primary: statement # primarystatement
+       | method # primarymethod;
 
 statement: statement_if # statementif
          | statement_while # statementwhile
