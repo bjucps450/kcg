@@ -8,7 +8,9 @@ import org.bju.KCG.KCGLexer;
 import org.bju.KCG.KCGParser;
 import org.main.il.Program;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -36,6 +38,12 @@ public class Main {
         new Program(
             new KCGCodeGenerator(analysis.getSymbolTable()).visit(tree)
         ).generate(filename);
+        var command = Runtime.getRuntime().exec("gcc " + filename + " -o " + filename.replace(".s", ""));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(command.getErrorStream()));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            System.err.println(line);
+        }
     }
 
     // parse the command line arguments and return all non arg arguments as an ArrayList
